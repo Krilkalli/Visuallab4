@@ -1,37 +1,76 @@
 import React, { useEffect, useState } from 'react';
 import BookCard from './BookCard';
+import SearchAndSort from './SearchandSort';
 
 const App = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const fetchBooks = async () => {
       const response = await fetch('https://fakeapi.extendsclass.com/books');
       const data = await response.json();
       const limitBooks = data.slice(0, 25);
       const booksWithImages = [];
-      
-      for(let book of limitBooks){
-        
-          const imageResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
-          const imageData = await imageResponse.json();
 
-          let coverImage = imageData.items?.[0]?.volumeInfo?.imageLinks?.thumbnail || '';
-          booksWithImages.push({...book, coverImage});
-          setBooks(booksWithImages);
+      for (let book of limitBooks) {
+        const imageResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
+        const imageData = await imageResponse.json();
+
+        let coverImage = imageData.items?.[0]?.volumeInfo?.imageLinks?.thumbnail || '';
+        booksWithImages.push({ ...book, coverImage });
       }
+      setBooks(booksWithImages);
       setLoading(false);
     };
 
     fetchBooks();
   }, []);
-  if (loading){
-    return (<div> Loading</div>);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortKey, setSortKey] = useState("title");
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
+  const handleSortKeyChange = (key) => {
+    setSortKey(key);
+  };
+
+  const handleSortOrderChange = (order) => {
+    setSortOrder(order);
+  };
+
+  // Фильтрация и сортировка книг
+  const filteredBooks = books
+    .filter(book => {
+      const titleMatch = book.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const authorsMatch = book.authors.some(author => author.toLowerCase().includes(searchTerm.toLowerCase()));
+      return titleMatch || authorsMatch;
+    })
+    .sort((a, b) => {
+      const modifier = sortOrder === "asc" ? 1 : -1;
+      if (sortKey === "title") {
+        return a.title.localeCompare(b.title) * modifier;
+      } else {
+        return a.authors.join(', ').localeCompare(b.authors.join(', ')) * modifier;
+      }
+    });
+
+  if (loading) {
+    return (<div>Loading...</div>);
   }
 
   return (
     <div style={styles.container}>
-      {books.map(book => (
+      <SearchAndSort 
+        onSearch={handleSearch} 
+        onSortKeyChange={handleSortKeyChange} 
+        onSortOrderChange={handleSortOrderChange} 
+      />
+      {filteredBooks.map(book => (
         <BookCard
           key={book.id}
           title={book.title}
@@ -48,10 +87,70 @@ const styles = {
     display: 'flex',
     flexWrap: 'wrap',
     justifyContent: 'center',
+    flexDirection: 'row',
   },
+
 };
 
 export default App;
+
+//--------------------------------------------------------
+// import React, { useEffect, useState } from 'react';
+// import BookCard from './BookCard';
+
+// const App = () => {
+//   const [books, setBooks] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   useEffect(() => {
+//     const fetchBooks = async () => {
+//       const response = await fetch('https://fakeapi.extendsclass.com/books');
+//       const data = await response.json();
+//       const limitBooks = data.slice(0, 25);
+//       const booksWithImages = [];
+      
+//       for(let book of limitBooks){
+        
+//           const imageResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
+//           const imageData = await imageResponse.json();
+
+//           let coverImage = imageData.items?.[0]?.volumeInfo?.imageLinks?.thumbnail || '';
+//           booksWithImages.push({...book, coverImage});
+//           setBooks(booksWithImages);
+//       }
+//       setLoading(false);
+//     };
+
+//     fetchBooks();
+//   }, []);
+//   if (loading){
+//     return (<div> Loading... </div>);
+//   }
+
+//   return (
+//     <div style={styles.container}>
+//       {books.map(book => (
+//         <BookCard
+//           key={book.id}
+//           title={book.title}
+//           authors={book.authors}
+//           coverImage={book.coverImage}
+//         />
+//       ))}
+//     </div>
+//   );
+// };
+
+// const styles = {
+//   container: {
+//     display: 'flex',
+//     flexWrap: 'wrap',
+//     justifyContent: 'center',
+//   },
+// };
+
+// export default App;
+
+// ---------------------------------------------------
 // import React, { useEffect, useState } from 'react';
 // import axios from 'axios';
 // import BookCard from './BookCard';

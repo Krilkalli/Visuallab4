@@ -1,5 +1,5 @@
 import React from 'react';
-
+import ErrorImage from "./img/books-11530998531mjqrfvch1a.png";
 // const BookCard = ({ title, authors, coverImage }) => {
   const BookCard = ({ title, authors, coverImage }) => {
   return (
@@ -7,7 +7,7 @@ import React from 'react';
       {coverImage ? (
         <img src={coverImage} alt={title} style={styles.coverImage} />
       ) : (
-        <div style={styles.placeholder}>Нет обложки</div>
+        <img src = {ErrorImage} style={styles.image} alt = "Беда"/> 
       )}
       <h2 style={styles.title}>{title}</h2>
       <p style={styles.authors}>{authors.join(', ')}</p>
@@ -44,6 +44,15 @@ const styles = {
     fontSize: '1em',
     color: '#555',
   },
+  // placeholder: {
+  //       width: '100%',
+  //       height: '250px',
+  //       display: 'flex',
+  //       alignItems: 'center',
+  //       justifyContent: 'center',
+  //       borderRadius: '5px',
+  //       marginBottom: '10px',
+  //      }
 };
 
 export default BookCard;

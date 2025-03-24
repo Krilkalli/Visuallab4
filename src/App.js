@@ -1,230 +1,117 @@
-import React, { useEffect, useState } from 'react';
-import BookCard from './BookCard';
-import SearchAndSort from './SearchandSort';
+import React, { useState, useEffect } from 'react';
+import Weather from './Weather';
+
+const API_KEY = 'c72e2d77ed6dd09c20f9f5b2c491b94e';
 
 const App = () => {
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
+    const [weatherData, setWeatherData] = useState(null);
+    const [uvData, setUvData] = useState(null);
+    const [city, setCity] = useState('Novosibirsk');
+    const [inputCity, setInputCity] = useState('');
+    const [location, setLocation] = useState({ lat: null, lon: null });
+    const [currentTime, setCurrentTime] = useState(new Date());
 
-  useEffect(() => {
-    const fetchBooks = async () => {
-      const response = await fetch('https://fakeapi.extendsclass.com/books');
-      const data = await response.json();
-      const limitBooks = data.slice(0, 25);
-      const booksWithImages = [];
 
-      for (let book of limitBooks) {
-        const imageResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
-        const imageData = await imageResponse.json();
+    useEffect(() => {
+        const loadWeather = async () => {
+                const geoResp = await fetch(
+                    `http://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`
+                );
+                const geoData = await geoResp.json();
 
-        let coverImage = imageData.items?.[0]?.volumeInfo?.imageLinks?.thumbnail || '';
-        booksWithImages.push({ ...book, coverImage });
-      }
-      setBooks(booksWithImages);
-      setLoading(false);
+                if (geoData.length === 0) {
+                    alert('Город не найден. Пожалуйста, введите корректное название города.');
+                    return;
+                }
+
+                const { lat, lon } = geoData[0];
+                setLocation({ lat, lon });
+
+                const weatherResp = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
+                const weatherData = await weatherResp.json();
+                setWeatherData(weatherData);
+
+                const uvResp = await fetch(`https://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${API_KEY}`);
+                const uvData = await uvResp.json();
+                setUvData(uvData);
+           
+        };
+
+        loadWeather();
+        const weatherInterval = setInterval(loadWeather, 3 * 3600 * 1000);
+        return () => clearInterval(weatherInterval);
+    }, [city]);
+
+    useEffect(() => {
+        const timeInterval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+
+        return () => clearInterval(timeInterval);
+    }, []);
+
+    const isNight = currentTime.getHours() >= 18 || currentTime.getHours() < 6;
+    const backgroundImage = isNight ? "url('/images/notch.jpg')" : "url('/images/utro.png')";
+    //const backgroundImage = isNight ? "url('/images/utro.png')" : "url('/images/utro.png')";
+    
+    const hour = currentTime.getHours();
+
+    const handleCityChange = (e) => {
+        setInputCity(e.target.value);
     };
 
-    fetchBooks();
-  }, []);
+    const handleSearch = () => {
+        if (inputCity.trim() !== '') {
+            setCity(inputCity.trim());
+        }
+    };
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortKey, setSortKey] = useState("title");
-  const [sortOrder, setSortOrder] = useState("asc");
 
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-  };
-
-  const handleSortKeyChange = (key) => {
-    setSortKey(key);
-  };
-
-  const handleSortOrderChange = (order) => {
-    setSortOrder(order);
-  };
-
-  // Фильтрация и сортировка книг
-  const filteredBooks = books
-    .filter(book => {
-      const titleMatch = book.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const authorsMatch = book.authors.some(author => author.toLowerCase().includes(searchTerm.toLowerCase()));
-      return titleMatch || authorsMatch;
-    })
-    .sort((a, b) => {
-      const modifier = sortOrder === "asc" ? 1 : -1;
-      if (sortKey === "title") {
-        return a.title.localeCompare(b.title) * modifier;
-      } else {
-        return a.authors.join(', ').localeCompare(b.authors.join(', ')) * modifier;
-      }
-    });
-
-  if (loading) {
-    return (<div>Loading...</div>);
-  }
-
-  return (
-    <div style={styles.container}>
-      <SearchAndSort 
-        onSearch={handleSearch} 
-        onSortKeyChange={handleSortKeyChange} 
-        onSortOrderChange={handleSortOrderChange} 
-      />
-      {filteredBooks.map(book => (
-        <BookCard
-          key={book.id}
-          title={book.title}
-          authors={book.authors}
-          coverImage={book.coverImage}
-        />
-      ))}
-    </div>
-  );
-};
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-
+    return (
+      <><div
+        style={{
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '100% 100%',
+          textAlign: 'center',
+          margin: 0,
+          backgroundImage: backgroundImage,
+        }}
+      >
+        <div style={{ marginBottom: '20px' }}>
+          <input
+            type="text"
+            value={inputCity}
+            onChange={handleCityChange}
+            placeholder="Введите город"
+            style={{
+              padding: '10px',
+              fontSize: '16px',
+              borderRadius: '5px',
+              border: '1px solid #ccc',
+              marginRight: '10px',
+            }} />
+          <button
+            onClick={handleSearch}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              borderRadius: '5px',
+              border: 'none',
+              backgroundColor: '#979aaa',
+              color: '#0a010d',
+              cursor: 'pointer',
+            }}
+          >
+            Поиск
+          </button>
+        </div>
+        {weatherData && uvData ? (
+          <Weather weatherData={weatherData} city={city} location={location} uvData={uvData} isNight={isNight} hour={hour} isAntarctica={city.toLocaleLowerCase()==="антарктида"}/>
+        ) : (
+          <p style={{ color: '#fff' }}>Загрузка данных о погоде...</p>
+        )}
+      </div></>
+    );
 };
 
 export default App;
-
-//--------------------------------------------------------
-// import React, { useEffect, useState } from 'react';
-// import BookCard from './BookCard';
-
-// const App = () => {
-//   const [books, setBooks] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   useEffect(() => {
-//     const fetchBooks = async () => {
-//       const response = await fetch('https://fakeapi.extendsclass.com/books');
-//       const data = await response.json();
-//       const limitBooks = data.slice(0, 25);
-//       const booksWithImages = [];
-      
-//       for(let book of limitBooks){
-        
-//           const imageResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`);
-//           const imageData = await imageResponse.json();
-
-//           let coverImage = imageData.items?.[0]?.volumeInfo?.imageLinks?.thumbnail || '';
-//           booksWithImages.push({...book, coverImage});
-//           setBooks(booksWithImages);
-//       }
-//       setLoading(false);
-//     };
-
-//     fetchBooks();
-//   }, []);
-//   if (loading){
-//     return (<div> Loading... </div>);
-//   }
-
-//   return (
-//     <div style={styles.container}>
-//       {books.map(book => (
-//         <BookCard
-//           key={book.id}
-//           title={book.title}
-//           authors={book.authors}
-//           coverImage={book.coverImage}
-//         />
-//       ))}
-//     </div>
-//   );
-// };
-
-// const styles = {
-//   container: {
-//     display: 'flex',
-//     flexWrap: 'wrap',
-//     justifyContent: 'center',
-//   },
-// };
-
-// export default App;
-
-// ---------------------------------------------------
-// import React, { useEffect, useState } from 'react';
-// import axios from 'axios';
-// import BookCard from './BookCard';
-
-// const App = () => {
-//   const [books, setBooks] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchBooks = async () => {
-//       try {
-//         const booksResponse = await axios.get('https://fakeapi.extendsclass.com/books');
-//         const booksData = booksResponse.data;
-
-//         const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-//         const booksWithCovers = await Promise.all(
-//           booksData.slice(0, 20).map(async (book, index) => { 
-//             await delay(index * 2000); 
-//             try {
-//               const coverResponse = await axios.get(
-//                 `https://www.googleapis.com/books/v1/volumes?q=isbn:${book.isbn}`
-//               );
-//               const cover = coverResponse.data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail || '';
-//               return { ...book, cover };
-//             } catch (error) {
-//               console.error(`Error fetching cover for ISBN ${book.isbn}:`, error);
-//               return { ...book, cover: '' }; 
-//             }
-//           })
-//         );
-
-//         setBooks(booksWithCovers);
-//       } catch (error) {
-//         console.error('Error fetching books:', error);
-//         setError('Ошибка при загрузке данных. Пожалуйста, попробуйте позже.');
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchBooks();
-//   }, []);
-
-//   if (loading) {
-//     return <div>Не злите Глеба</div>;
-//   }
-
-//   if (error) {
-//     return <div>{error}</div>;
-//   }
-
-//   return (
-//     <div style={styles.container}>
-//       {books.map((book) => (
-//         <BookCard
-//           key={book.id}
-//           title={book.title}
-//           authors={book.authors}
-//           cover={book.cover}
-//         />
-//       ))}
-//     </div>
-//   );
-// };
-
-// const styles = {
-//   container: {
-//     display: 'flex',
-//     flexWrap: 'wrap',
-//     justifyContent: 'center',
-//     padding: '20px',
-//   },
-// };
-
-// export default App;

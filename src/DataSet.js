@@ -1,127 +1,125 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
-import './style.css';
-const DataSet = ({
-  data = [],
-  headers,
-  renderHeader,
-  renderCell,
-  rowKey = 'id',
-  className = '',
-}) => {
-  // Состояние для хранения выделенных строк
-  const [selectedRows, setSelectedRows] = useState(new Set());
+import { useState } from 'react';
 
-  // Обработчик клика по строке
-  const handleRowClick = (event, rowId) => {
-    // Проверяем, зажата ли клавиша Ctrl
-    const isCtrlPressed = event.ctrlKey || event.metaKey;
+export default function DataSet({ 
+  data, 
+  columns, 
+  onAdd, 
+  onUpdate, 
+  selectedRows, 
+  onSelect 
+}) {
+  const [newItem, setNewItem] = useState({});
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
 
-    setSelectedRows(prevSelected => {
-      const newSelected = isCtrlPressed ? new Set(prevSelected) : new Set();
-      
-      // Если строка уже выделена и нажат Ctrl - снимаем выделение
-      // Иначе добавляем в выделенные
-      if (prevSelected.has(rowId) && isCtrlPressed) {
-        newSelected.delete(rowId);
-      } else {
-        newSelected.add(rowId);
-      }
-      
-      return newSelected;
-    });
+  const handleAdd = () => {
+    if (Object.values(newItem).some(val => !val)) {
+      alert('Please fill all fields');
+      return;
+    }
+    onAdd(newItem);
+    setNewItem({});
   };
 
-  // Определяем заголовки, если они не переданы
-  const resolvedHeaders = headers || 
-    (data.length > 0 ? Object.keys(data[0]) : []);
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setEditData({ ...item });
+  };
 
-  // Область для выделения строки (левая часть)
-  const renderSelectionArea = (rowId) => (
-    <div 
-      className="selection-area"
-      onClick={(e) => handleRowClick(e, rowId)}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
-      {selectedRows.has(rowId) ? '✓' : ' '}
-    </div>
-  );
+  const handleSaveEdit = () => {
+    onUpdate(editData);
+    setEditingId(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const handleSelect = (id) => {
+    if (selectedRows.includes(id)) {
+      onSelect(selectedRows.filter(rowId => rowId !== id));
+    } else {
+      onSelect([...selectedRows, id]);
+    }
+  };
 
   return (
-    <div className={`data-set ${className}`}>
+    <div className="data-set">
       <table>
         <thead>
           <tr>
-            <th className="selection-header"></th>
-            {resolvedHeaders.map((header, index) => (
-              <th key={index}>
-                {renderHeader 
-                  ? renderHeader(header, index) 
-                  : (typeof header === 'object' ? header.title : header)}
-              </th>
+            <th></th>
+            {columns.map(column => (
+              <th key={column.key}>{column.label}</th>
             ))}
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {data.map((row, rowIndex) => {
-            const rowId = row[rowKey] || rowIndex;
-            const isSelected = selectedRows.has(rowId);
-            
-            return (
-              <tr 
-                key={rowId}
-                className={isSelected ? 'selected' : ''}
-              >
-                <td className="selection-cell">
-                  {renderSelectionArea(rowId)}
+          {/* Строка для добавления нового элемента */}
+          <tr className="add-row">
+            <td></td>
+            {columns.map(column => (
+              <td key={column.key}>
+                {column.key !== 'id' && (
+                  <input
+                    type="text"
+                    placeholder={column.label}
+                    value={newItem[column.key] || ''}
+                    onChange={(e) => 
+                      setNewItem({ ...newItem, [column.key]: e.target.value })
+                    }
+                  />
+                )}
+              </td>
+            ))}
+            <td>
+              <button onClick={handleAdd}>Add</button>
+            </td>
+          </tr>
+
+          {/* Строки данных */}
+          {data.map(item => (
+            <tr 
+              key={item.id} 
+              className={selectedRows.includes(item.id) ? 'selected' : ''}
+            >
+              <td>
+                <input
+                  type="checkbox"
+                  checked={selectedRows.includes(item.id)}
+                  onChange={() => handleSelect(item.id)}
+                />
+              </td>
+              {columns.map(column => (
+                <td key={column.key}>
+                  {editingId === item.id && column.editable ? (
+                    <input
+                      type="text"
+                      value={editData[column.key]}
+                      onChange={(e) => 
+                        setEditData({ ...editData, [column.key]: e.target.value })
+                      }
+                    />
+                  ) : (
+                    item[column.key]
+                  )}
                 </td>
-                {resolvedHeaders.map((header, colIndex) => {
-                  const field = typeof header === 'object' ? header.field : header;
-                  const cellValue = row[field];
-                  
-                  return (
-                    <td key={colIndex}>
-                      {renderCell 
-                        ? renderCell(cellValue, row, rowIndex, colIndex)
-                        : String(cellValue)}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
+              ))}
+              <td>
+                {editingId === item.id ? (
+                  <>
+                    <button onClick={handleSaveEdit}>Save</button>
+                    <button onClick={handleCancelEdit}>Cancel</button>
+                  </>
+                ) : (
+                  <button onClick={() => handleEdit(item)}>Edit</button>
+                )}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
   );
-};
-
-DataSet.propTypes = {
-  // Массив данных для отображения
-  data: PropTypes.arrayOf(PropTypes.object).isRequired,
-  
-  // Массив заголовков (может быть строкой или объектом {field: 'name', title: 'Имя'})
-  headers: PropTypes.arrayOf(
-    PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.shape({
-        field: PropTypes.string.isRequired,
-        title: PropTypes.string,
-      }),
-    ])
-  ),
-  
-  // Функция для рендеринга заголовка
-  renderHeader: PropTypes.func,
-  
-  // Функция для рендеринга ячейки
-  renderCell: PropTypes.func,
-  
-  // Имя свойства, которое используется как ключ строки
-  rowKey: PropTypes.string,
-  
-  // Дополнительные классы CSS
-  className: PropTypes.string,
-};
-
-export default DataSet;
+}

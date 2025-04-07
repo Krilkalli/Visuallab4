@@ -1,173 +1,149 @@
 import { useState, useEffect } from 'react';
-import DataSet from './DataSet';
-import { useOptimistic } from './useOptimistic';
+import CommentList from './CommentList';
+import './styles.css';
 
-const API_URL = 'https://jsonplaceholder.typicode.com/comments';
+export default function CommentManager() {
+  const [commentData, setCommentData] = useState([]);
+  const [uiComments, setUiComments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [newIdCounter, setNewIdCounter] = useState(501); 
 
-export default function App() {
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedRows, setSelectedRows] = useState([]);
-  
-  const [optimisticComments, addOptimisticComment] = useOptimistic(
-    comments,
-    (state, action) => {
-      switch (action.type) {
-        case 'add':
-          return [...state, action.payload];
-        case 'delete':
-          return state.filter(comment => !action.payload.includes(comment.id));
-        case 'update':
-          return state.map(comment => 
-            comment.id === action.payload.id ? action.payload : comment
-          );
-        default:
-          return state;
+  useEffect(() => {
+    async function loadComments() {
+      try {
+        const result = await fetch('https://jsonplaceholder.typicode.com/comments');
+        
+        if (!result.ok) {
+          throw new Error('Не удалось загрузить комментарии');
+        }
+        
+        const jsonData = await result.json();
+        setCommentData(jsonData);
+        setUiComments(jsonData);
+        
+        const highestId = jsonData.reduce((max, item) => Math.max(max, item.id), 0);
+        setNewIdCounter(highestId + 1);
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : 'Произошла ошибка');
+      } finally {
+        setIsLoading(false);
       }
     }
-  );
 
-  // Загрузка данных при монтировании
-  useEffect(() => {
-    const fetchComments = async () => {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Network response was not ok');
-        const data = await response.json();
-        setComments(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchComments();
+    loadComments();
   }, []);
 
-  // Обработчик добавления комментария
-  const handleAddComment = async (newComment) => {
-    try {
-      // Оптимистичное обновление
-      addOptimisticComment({
-        type: 'add',
-        payload: { ...newComment, id: Date.now() } // Временный ID
-      });
-
-      // Отправка на сервер
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify(newComment),
-        headers: {
-          'Content-type': 'application/json; charset=UTF-8',
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to add comment');
-
-      const data = await response.json();
-      
-      // Заменяем временный ID на реальный
-      setComments(prev => prev.map(comment => 
-        comment.id === newComment.id ? data : comment
-      ));
-    } catch (err) {
-      // Откатываем изменения при ошибке
-      setComments(prev => prev.filter(comment => comment.id !== newComment.id));
-      alert('Failed to add comment: ' + err.message);
-    }
+  const computePostId = (index) => {
+    return Math.floor((index - 1) / 5) + 1;
   };
 
-  // Обработчик удаления комментариев
-  const handleDeleteComments = async () => {
-    if (selectedRows.length === 0) return;
+  const addComment = async (comment) => {
+    const temporaryId = newIdCounter;
+    const commentToAdd = { 
+      ...comment, 
+      id: temporaryId,
+      postId: computePostId(uiComments.length + 1) 
+    };
+    
+    setNewIdCounter(prev => prev + 1);
+    setUiComments(prev => [...prev, commentToAdd]);
     
     try {
-      // Оптимистичное обновление
-      addOptimisticComment({
-        type: 'delete',
-        payload: selectedRows
-      });
-
-      // Отправка на сервер
-      const deletePromises = selectedRows.map(id => 
-        fetch(`${API_URL}/${id}`, { method: 'DELETE' })
-      );
-      
-      const results = await Promise.all(deletePromises);
-      const allOk = results.every(res => res.ok);
-      
-      if (!allOk) throw new Error('Some deletions failed');
-
-      // Обновляем состояние после успешного удаления
-      setComments(prev => prev.filter(comment => !selectedRows.includes(comment.id)));
-      setSelectedRows([]);
-    } catch (err) {
-      // Восстанавливаем данные при ошибке
-      setComments(optimisticComments);
-      alert('Failed to delete comments: ' + err.message);
-    }
-  };
-
-  // Обработчик обновления комментария
-  const handleUpdateComment = async (updatedComment) => {
-    try {
-      // Оптимистичное обновление
-      addOptimisticComment({
-        type: 'update',
-        payload: updatedComment
-      });
-
-      // Отправка на сервер
-      const response = await fetch(`${API_URL}/${updatedComment.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updatedComment),
+      const response = await fetch('https://jsonplaceholder.typicode.com/comments', {
+        method: 'POST',
+        body: JSON.stringify(commentToAdd),
         headers: {
           'Content-type': 'application/json; charset=UTF-8',
         },
       });
-
-      if (!response.ok) throw new Error('Failed to update comment');
-
-      // Обновляем состояние после успешного обновления
-      setComments(prev => prev.map(comment => 
-        comment.id === updatedComment.id ? updatedComment : comment
-      ));
+      
+      if (!response.ok) {
+        throw new Error('Ошибка при добавлении');
+      }
+      
+      const createdComment = await response.json();
+      
+      setCommentData(prev => [...prev, createdComment]);
+      setNewIdCounter(prev => Math.max(prev, createdComment.id + 1));
     } catch (err) {
-      // Восстанавливаем данные при ошибке
-      setComments(optimisticComments);
-      alert('Failed to update comment: ' + err.message);
+      setUiComments(prev => prev.filter(c => c.id !== temporaryId));
+      setErrorMessage(err instanceof Error ? err.message : 'Ошибка добавления');
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  const removeComments = async (ids) => {
+    const previousState = [...uiComments];
+    setUiComments(prev => prev.filter(c => !ids.includes(c.id)));
+    
+    try {
+      const results = await Promise.all(
+        ids.map(id => 
+          fetch(`https://jsonplaceholder.typicode.com/comments/${id}`, {
+            method: 'DELETE',
+          })
+        )
+      );
+      
+      const success = results.every(r => r.ok);
+      if (!success) {
+        throw new Error('Ошибка удаления');
+      }
+      
+      setCommentData(prev => prev.filter(c => !ids.includes(c.id)));
+    } catch (err) {
+      setUiComments(previousState);
+      setErrorMessage(err instanceof Error ? err.message : 'Не удалось удалить');
+    }
+  };
+
+  const modifyComment = async (id, changes) => {
+    const originalComment = uiComments.find(c => c.id === id);
+    setUiComments(prev => prev.map(c => c.id === id ? {...c, ...changes} : c));
+    
+    try {
+      const response = await fetch(`https://jsonplaceholder.typicode.com/comments/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(changes),
+        headers: {
+          'Content-type': 'application/json; charset=UTF-8',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Ошибка обновления');
+      }
+      
+      const updated = await response.json();
+      setCommentData(prev => prev.map(c => c.id === id ? updated : c));
+    } catch (err) {
+      setUiComments(prev => prev.map(c => c.id === id ? originalComment : c));
+      setErrorMessage(err instanceof Error ? err.message : 'Ошибка изменения');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="loading-container">Загрузка комментариев...</div>;
+  }
+
+  if (errorMessage) {
+    return <div className="error-container">Ошибка: {errorMessage}</div>;
+  }
 
   return (
-    <div className="app">
-      <h1>Comments Table</h1>
-      <div className="controls">
-        <button 
-          onClick={handleDeleteComments} 
-          disabled={selectedRows.length === 0}
-        >
-          Delete Selected
-        </button>
+    <div className="app-container">
+      <div className="comment-manager">
+        <header className="app-header">
+          <h1>Управление комментариями</h1>
+        </header>
+        <CommentList 
+          comments={uiComments}
+          onAdd={addComment}
+          onDelete={removeComments}
+          onUpdate={modifyComment}
+        />
+        {errorMessage && <div className="error-notification">{errorMessage}</div>}
       </div>
-      <DataSet
-        data={optimisticComments}
-        columns={[
-          { key: 'id', label: 'ID' },
-          { key: 'name', label: 'Name', editable: true },
-          { key: 'email', label: 'Email', editable: true },
-          { key: 'body', label: 'Body', editable: true }
-        ]}
-        onAdd={handleAddComment}
-        onUpdate={handleUpdateComment}
-        selectedRows={selectedRows}
-        onSelect={setSelectedRows}
-      />
     </div>
   );
 }

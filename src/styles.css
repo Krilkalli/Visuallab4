@@ -1,0 +1,257 @@
+/* Основные стили */
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .app-container {
+    padding: 20px;
+  }
+  
+  .app-header {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .app-header h1 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 28px;
+  }
+  
+  /* Стили для загрузки и ошибок */
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 18px;
+    color: #666;
+  }
+  
+  .error-container {
+    padding: 30px;
+    text-align: center;
+    font-size: 18px;
+    color: #d32f2f;
+    background-color: white;
+    border-radius: 8px;
+    max-width: 600px;
+    margin: 50px auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .error-notification {
+    padding: 12px;
+    margin-top: 20px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    border-radius: 6px;
+    text-align: center;
+  }
+  
+  /* Стили для формы добавления */
+  .add-comment-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    border-radius: 10px;
+  }
+  
+  .add-comment-section h3 {
+    margin-top: 0;
+    color: #2c3e50;
+  }
+  
+  .comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .form-input, .form-textarea {
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+  }
+  
+  .form-input:focus, .form-textarea:focus {
+    border-color: #4caf50;
+    outline: none;
+  }
+  
+  .form-textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+  
+  .add-button {
+    padding: 8px 12px; 
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px; 
+  font-weight: 500;
+  transition: background-color 0.3s;
+  }
+  
+  .add-button:hover {
+    background-color: #388e3c;
+
+  }
+  
+  /* Стили для таблицы */
+  .actions-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .comments-title {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 20px;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .delete-button {
+    padding: 8px 16px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+  }
+  
+  .delete-button:hover:not(.disabled) {
+    background-color: #d32f2f;
+  }
+  
+  .delete-button.disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+  
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .comments-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: white;
+    border-radius: 8px;
+  }
+  
+  .table-header {
+    padding: 14px;
+    text-align: left;
+    background-color: #f5f7fa;
+    color: #2c3e50;
+    font-weight: 600;
+    border-bottom: 2px solid #e0e0e0;
+  }
+  
+  .table-row:hover {
+    background-color: #f9f9f9;
+  }
+  
+  .selected-row {
+    background-color: #e3f2fd !important;
+  }
+  
+  .table-cell {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+  }
+  
+  .actions-cell {
+    width: 120px;
+  }
+  
+  .table-row-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  
+  .row-checkbox {
+    transform: scale(1.2);
+    cursor: pointer;
+  }
+  
+  /* Стили для редактирования */
+  .edit-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .edit-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+  }
+  
+  .edit-button, .save-button, .cancel-button {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .button-icon {
+    font-size: 14px;
+  }
+  
+  .edit-button {
+    background-color: #2196f3;
+    color: white;
+  }
+  
+  .edit-button:hover {
+    background-color: #1976d2;
+  }
+  
+  .save-button {
+    background-color: #4caf50;
+    color: white;
+  }
+  
+  .save-button:hover {
+    background-color: #388e3c;
+  }
+  
+  .cancel-button {
+    background-color: #f44336;
+    color: white;
+  }
+  
+  .cancel-button:hover {
+    background-color: #d32f2f;
+  }

@@ -1,149 +1,43 @@
-import { useState, useEffect } from 'react';
-import CommentList from './CommentList';
-import './styles.css';
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navigation from './Navigation';
+import CommentsPage from './pages/CommentsPage';
+import PostsPage from './pages/PostsPage';
+import AlbumsPage from './pages/AlbumsPage';
+import TodosPage from './pages/TodosPage';
+import UsersPage from './pages/UsersPage';
+import CaseOpening from './CaseOpening';
 
-export default function CommentManager() {
-  const [commentData, setCommentData] = useState([]);
-  const [uiComments, setUiComments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [newIdCounter, setNewIdCounter] = useState(501); 
+function App() {
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
 
-  useEffect(() => {
-    async function loadComments() {
-      try {
-        const result = await fetch('https://jsonplaceholder.typicode.com/comments');
-        
-        if (!result.ok) {
-          throw new Error('Не удалось загрузить комментарии');
-        }
-        
-        const jsonData = await result.json();
-        setCommentData(jsonData);
-        setUiComments(jsonData);
-        
-        const highestId = jsonData.reduce((max, item) => Math.max(max, item.id), 0);
-        setNewIdCounter(highestId + 1);
-      } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : 'Произошла ошибка');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadComments();
-  }, []);
-
-  const computePostId = (index) => {
-    return Math.floor((index - 1) / 5) + 1;
+  const contentStyle = {
+    marginLeft: isNavCollapsed ? '60px' : '250px',
+    padding: '20px',
+    transition: 'margin-left 0.3s ease',
+    minHeight: '100vh',
+    backgroundColor: '#f5f7fa'
   };
-
-  const addComment = async (comment) => {
-    const temporaryId = newIdCounter;
-    const commentToAdd = { 
-      ...comment, 
-      id: temporaryId,
-      postId: computePostId(uiComments.length + 1) 
-    };
-    
-    setNewIdCounter(prev => prev + 1);
-    setUiComments(prev => [...prev, commentToAdd]);
-    
-    try {
-      const response = await fetch('https://jsonplaceholder.typicode.com/comments', {
-        method: 'POST',
-        body: JSON.stringify(commentToAdd),
-        headers: {
-          'Content-type': 'application/json; charset=UTF-8',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Ошибка при добавлении');
-      }
-      
-      const createdComment = await response.json();
-      
-      setCommentData(prev => [...prev, createdComment]);
-      setNewIdCounter(prev => Math.max(prev, createdComment.id + 1));
-    } catch (err) {
-      setUiComments(prev => prev.filter(c => c.id !== temporaryId));
-      setErrorMessage(err instanceof Error ? err.message : 'Ошибка добавления');
-    }
-  };
-
-  const removeComments = async (ids) => {
-    const previousState = [...uiComments];
-    setUiComments(prev => prev.filter(c => !ids.includes(c.id)));
-    
-    try {
-      const results = await Promise.all(
-        ids.map(id => 
-          fetch(`https://jsonplaceholder.typicode.com/comments/${id}`, {
-            method: 'DELETE',
-          })
-        )
-      );
-      
-      const success = results.every(r => r.ok);
-      if (!success) {
-        throw new Error('Ошибка удаления');
-      }
-      
-      setCommentData(prev => prev.filter(c => !ids.includes(c.id)));
-    } catch (err) {
-      setUiComments(previousState);
-      setErrorMessage(err instanceof Error ? err.message : 'Не удалось удалить');
-    }
-  };
-
-  const modifyComment = async (id, changes) => {
-    const originalComment = uiComments.find(c => c.id === id);
-    setUiComments(prev => prev.map(c => c.id === id ? {...c, ...changes} : c));
-    
-    try {
-      const response = await fetch(`https://jsonplaceholder.typicode.com/comments/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(changes),
-        headers: {
-          'Content-type': 'application/json; charset=UTF-8',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Ошибка обновления');
-      }
-      
-      const updated = await response.json();
-      setCommentData(prev => prev.map(c => c.id === id ? updated : c));
-    } catch (err) {
-      setUiComments(prev => prev.map(c => c.id === id ? originalComment : c));
-      setErrorMessage(err instanceof Error ? err.message : 'Ошибка изменения');
-    }
-  };
-
-  if (isLoading) {
-    return <div className="loading-container">Загрузка комментариев...</div>;
-  }
-
-  if (errorMessage) {
-    return <div className="error-container">Ошибка: {errorMessage}</div>;
-  }
 
   return (
-    <div className="app-container">
-      <div className="comment-manager">
-        <header className="app-header">
-          <h1>Управление комментариями</h1>
-        </header>
-        <CommentList 
-          comments={uiComments}
-          onAdd={addComment}
-          onDelete={removeComments}
-          onUpdate={modifyComment}
-        />
-        {errorMessage && <div className="error-notification">{errorMessage}</div>}
+    <Router>
+      <Navigation 
+        isCollapsed={isNavCollapsed}
+        toggleNav={() => setIsNavCollapsed(!isNavCollapsed)} 
+      />
+      
+      <div style={contentStyle}>
+        <Routes>
+          <Route path="/" element={<CommentsPage />} />
+          <Route path="/posts" element={<PostsPage />} />
+          <Route path="/albums" element={<AlbumsPage />} />
+          <Route path="/todos" element={<TodosPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/case" element={<CaseOpening />} />
+        </Routes>
       </div>
-    </div>
+    </Router>
   );
 }
+
+export default App;

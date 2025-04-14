@@ -1,0 +1,106 @@
+/* Основные стили навигации */
+.sidebar {
+    width: 250px;
+    background: linear-gradient(180deg, #5203e68f, #34495e);
+    color: white;
+    padding: 20px 0;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    overflow: hidden;
+    z-index: 100;
+  }
+  
+  .sidebar.collapsed {
+    width: 60px;
+  }
+  
+  /* Стили списка */
+  .sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    margin-top: 40px;
+  }
+  
+  .sidebar li {
+    padding: 5px 15px;
+  }
+  
+  .sidebar a {
+    color: #ffffff;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  .sidebar a:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .sidebar .active {
+    background: #9ba8d1;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+  
+  .nav-icon {
+    font-size: 20px;
+    margin-right: 15px;
+    min-width: 20px;
+    text-align: center;
+  }
+  
+  .sidebar.collapsed .nav-text {
+    display: none;
+  }
+  
+  .sidebar.collapsed .nav-icon {
+    margin-right: 0;
+    font-size: 24px;
+  }
+  
+  .toggle-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 101;
+  }
+  
+  .toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+  }
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 60px;
+    }
+    
+    .sidebar:not(.collapsed) {
+      width: 250px;
+      z-index: 1000;
+    }
+    
+    .sidebar:not(.collapsed) .nav-text {
+      display: inline;
+    }
+    
+    .sidebar:not(.collapsed) .nav-icon {
+      margin-right: 15px;
+      font-size: 20px;
+    }
+  }

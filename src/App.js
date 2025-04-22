@@ -12,7 +12,7 @@ export default function CommentManager() {
   useEffect(() => {
     async function loadComments() {
       try {
-        const result = await fetch('https://jsonplaceholder.typicode.com/comments');
+        const result = await fetch('http://localhost:5148/comments');
         
         if (!result.ok) {
           throw new Error('Не удалось загрузить комментарии');
@@ -50,7 +50,7 @@ export default function CommentManager() {
     setUiComments(prev => [...prev, commentToAdd]);
     
     try {
-      const response = await fetch('https://jsonplaceholder.typicode.com/comments', {
+      const response = await fetch('http://localhost:5148/comments', {
         method: 'POST',
         body: JSON.stringify(commentToAdd),
         headers: {
@@ -75,11 +75,12 @@ export default function CommentManager() {
   const removeComments = async (ids) => {
     const previousState = [...uiComments];
     setUiComments(prev => prev.filter(c => !ids.includes(c.id)));
-    
+    //http://localhost:5148/comments
+    //https://jsonplaceholder.typicode.com/comments/${id}
     try {
       const results = await Promise.all(
         ids.map(id => 
-          fetch(`https://jsonplaceholder.typicode.com/comments/${id}`, {
+          fetch(`http://localhost:5148/comments/${id}`, {
             method: 'DELETE',
           })
         )
@@ -102,7 +103,7 @@ export default function CommentManager() {
     setUiComments(prev => prev.map(c => c.id === id ? {...c, ...changes} : c));
     
     try {
-      const response = await fetch(`https://jsonplaceholder.typicode.com/comments/${id}`, {
+      const response = await fetch(`http://localhost:5148/comments/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(changes),
         headers: {
@@ -123,18 +124,18 @@ export default function CommentManager() {
   };
 
   if (isLoading) {
-    return <div className="loading-container">Загрузка комментариев...</div>;
+    return <div className="loading-container">loading...</div>;
   }
 
   if (errorMessage) {
-    return <div className="error-container">Ошибка: {errorMessage}</div>;
+    return <div className="error-container">Error: {errorMessage}</div>;
   }
 
   return (
     <div className="app-container">
       <div className="comment-manager">
         <header className="app-header">
-          <h1>Управление комментариями</h1>
+          <h1>Spisok</h1>
         </header>
         <CommentList 
           comments={uiComments}

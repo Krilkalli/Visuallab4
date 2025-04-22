@@ -56,7 +56,7 @@ const CommentList = ({ comments, onAdd, onDelete, onUpdate }) => {
   return (
     <div className="comment-list-container">
       <div className="add-comment-section">
-        <h3>Добавить комментарий</h3>
+        <h3>addComment</h3>
         <div className="comment-form">
           <input
             type="number"
@@ -68,7 +68,7 @@ const CommentList = ({ comments, onAdd, onDelete, onUpdate }) => {
           <input
             value={newCommentData.name}
             onChange={(e) => setNewCommentData({...newCommentData, name: e.target.value})}
-            placeholder="Имя"
+            placeholder="Name"
             className="form-input"
             required
           />
@@ -81,7 +81,7 @@ const CommentList = ({ comments, onAdd, onDelete, onUpdate }) => {
           <textarea
             value={newCommentData.content}
             onChange={(e) => setNewCommentData({...newCommentData, content: e.target.value})}
-            placeholder="Текст комментария"
+            placeholder="Body"
             className="form-textarea"
             required
           />
@@ -95,14 +95,14 @@ const CommentList = ({ comments, onAdd, onDelete, onUpdate }) => {
       </div>
 
       <div className="actions-container">
-        <h3 className="comments-title">Список комментариев ({comments.length})</h3>
+        <h3 className="comments-title">Spisok ({comments.length})</h3>
         <div className="action-buttons">
           <button 
             onClick={handleDelete}
             disabled={selectedComments.length === 0}
             className={`delete-button ${selectedComments.length ? '' : 'disabled'}`}
           >
-            Удалить выбранные ({selectedComments.length})
+            Delete  ({selectedComments.length})
           </button>
         </div>
       </div>

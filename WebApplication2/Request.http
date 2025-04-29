@@ -1,0 +1,34 @@
+@URL = http://localhost:5432
+
+###
+GET {{URL}}/comments
+Accept: application/json
+
+### 
+GET {{URL}}/comments/1
+Accept: application/json
+
+### 
+POST {{URL}}/comments
+Content-Type: application/json
+
+{
+  "name": "Kirill",
+  "email": "karton@gmail.com",
+  "body": "sigmasigmasigmasigms",
+  "postId": 1
+}
+
+###
+PATCH {{URL}}/comments/6
+Content-Type: application/json
+
+{
+  "name": "notkirill",
+  "email": "philpaylevich@mail.ru",
+  "body": "hhhhhhhhhhh",
+  "postId": 1
+}
+
+### 
+DELETE {{URL}}/comments/5

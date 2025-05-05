@@ -1,63 +1,86 @@
+//настройка системы логирования
 using Microsoft.EntityFrameworkCore;
 using WebApplication2.Repositories;
 using WebApplication2.Model;
 using WebApplication2.Services;
+using WebApplication2.Logging; 
 
 var builder = WebApplication.CreateBuilder(args);
-//// Регистрация DbContext с настройками из конфигурации
-builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
-//регистрация зависимостей:
-builder.Services.AddScoped<ICommentRepository, CommentRepository>();
-builder.Services.AddScoped<CommentService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
-        builder => builder
-            .WithOrigins("http://localhost:3000")
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
+
+builder.Services.AddDbContext<AppDbContext>(options => 
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
+
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<CommentService>();
+
+builder.Logging.ClearProviders();//Очищаем стандартные провайдеры
+builder.Logging.AddConsole();//Добавляем вывод в консоль
+builder.Logging.AddProvider(new DatabaseLoggerProvider(builder.Services.BuildServiceProvider()));//Добавляем провайдер
+
 var app = builder.Build();
-
-app.UseCors("AllowReactApp");
-
-
-app.MapGet("/comments", (CommentService service) => 
+using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated(); // Создаст все таблицы, если их нет
+}
+
+app.UseCors();
+
+app.MapGet("/comments", (CommentService service, ILogger<Program> logger) => 
+{
+    logger.LogInformation("GET /comments");
     return Results.Ok(service.GetAll());
 });
 
-app.MapGet("/comments/{id}", (int id, CommentService service) => 
+app.MapGet("/comments/{id}", (int id, CommentService service, ILogger<Program> logger) => 
 {
+    logger.LogInformation("GET /comments/{Id}", id);
     var comment = service.GetById(id);
     return comment is not null ? Results.Ok(comment) : Results.NotFound();
 });
 
-app.MapPost("/comments", (Comment comment, CommentService service) => 
+app.MapPost("/comments", (Comment comment, CommentService service, ILogger<Program> logger) => 
 {
     var createdComment = service.Add(comment);
+    logger.LogInformation("POST /comments - ID: {Id}", createdComment.Id);
     return Results.Created($"/comments/{createdComment.Id}", createdComment);
 });
 
-app.MapPatch("/comments/{id}", (int id, Comment comment, CommentService service) => 
+app.MapPatch("/comments/{id}", (int id, Comment comment, CommentService service, ILogger<Program> logger) => 
 {
+    logger.LogInformation("PATCH /comments/{Id}", id);
     var updatedComment = service.Update(id, comment);
     return updatedComment is not null ? Results.Ok(updatedComment) : Results.NotFound();
 });
 
-app.MapDelete("/comments/{id}", (int id, CommentService service) => 
+app.MapDelete("/comments/{id}", (int id, CommentService service, ILogger<Program> logger) => 
 {
+    logger.LogInformation("DELETE /comments/{Id}", id);
     service.Delete(id);
     return Results.NoContent();
 });
 
-app.Run();
-//Модель - Comment.cs определяет структуру данных
-//Repository - CommentRepository.cs - отвечает за работу с базой данных
-//Service - CommentService - содержит бизнес-логику
+app.MapGet("/logs", (AppDbContext dbContext, string? level, string? search, string? method) =>
+{ // эндпоинт для просмотра логов
+    var query = dbContext.Logs.AsQueryable();
 
-// builder.Services.AddSingleton<ICommentRepository, CommentRepository>();
-// builder.Services.AddSingleton<CommentService>();
-//иньекция когда зависимости не создаются внутри класса, а внедряются извне.
+    if (!string.IsNullOrEmpty(level))
+        query = query.Where(l => l.Level == level);
+        //фильрует по уровню, http методу, по запросу
+    if (!string.IsNullOrEmpty(method))
+        query = query.Where(m => m.MethodHttp == method);
+    if (!string.IsNullOrEmpty(search))
+        query = query.Where(l => l.Message.Contains(search) || (l.MethodHttp != null && l.MethodHttp.Contains(search)) || (l.Exception != null && l.Exception.Contains(search)));
+
+    return query.OrderByDescending(l => l.Timestamp).ToList();
+});
+
+app.MapGet("/", () => "Рабочие эндпоинты: /comments, /logs");
+
+app.Run();
